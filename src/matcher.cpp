@@ -16,12 +16,12 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
 libviso2; if not, write to the Free Software Foundation, Inc., 51 Franklin
-Street, Fifth Floor, Boston, MA 02110-1301, USA 
+Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
-#include "matcher.h"
-#include "triangle.h"
-#include "filter.h"
+#include "viso2/matcher.h"
+#include "viso2/triangle.h"
+#include "viso2/filter.h"
 
 using namespace std;
 
@@ -57,7 +57,7 @@ Matcher::Matcher(parameters param) : param(param) {
 
   // margin needed to compute descriptor + sobel responses
   margin = 8+1;
-  
+
   // adjust match radius on half resolution
   if (param.half_resolution)
     this->param.match_radius /= 2;
@@ -189,11 +189,11 @@ void Matcher::pushBack(uint8_t* I1, uint8_t* I2, int32_t* dims, const bool repla
 }
 
 void Matcher::matchFeatures(int32_t method, Matrix *Tr_delta) {
-  
+
   //////////////////
   // sanity check //
   //////////////////
-  
+
   // flow
   if (method==0) {
     if (m1p2==0 || n1p2==0 || m1c2==0 || n1c2==0)
@@ -201,7 +201,7 @@ void Matcher::matchFeatures(int32_t method, Matrix *Tr_delta) {
     if (param.multi_stage)
       if (m1p1==0 || n1p1==0 || m1c1==0 || n1c1==0)
         return;
-    
+
   // stereo
   } else if (method==1) {
     if (m1c2==0 || n1c2==0 || m2c2==0 || n2c2==0)
@@ -209,14 +209,14 @@ void Matcher::matchFeatures(int32_t method, Matrix *Tr_delta) {
     if (param.multi_stage)
       if (m1c1==0 || n1c1==0 || m2c1==0 || n2c1==0)
         return;
-    
+
   // quad matching
   } else {
     if (m1p2==0 || n1p2==0 || m2p2==0 || n2p2==0 || m1c2==0 || n1c2==0 || m2c2==0 || n2c2==0)
       return;
     if (param.multi_stage)
       if (m1p1==0 || n1p1==0 || m2p1==0 || n2p1==0 || m1c1==0 || n1c1==0 || m2c1==0 || n2c1==0)
-        return;    
+        return;
   }
 
   // clear old matches
@@ -229,9 +229,9 @@ void Matcher::matchFeatures(int32_t method, Matrix *Tr_delta) {
     // 1st pass (sparse matches)
     matching(m1p1,m2p1,m1c1,m2c1,n1p1,n2p1,n1c1,n2c1,p_matched_1,method,false,Tr_delta);
     removeOutliers(p_matched_1,method);
-    
+
     // compute search range prior statistics (used for speeding up 2nd pass)
-    computePriorStatistics(p_matched_1,method);      
+    computePriorStatistics(p_matched_1,method);
 
     // 2nd pass (dense matches)
     matching(m1p2,m2p2,m1c2,m2c2,n1p2,n2p2,n1c2,n2c2,p_matched_2,method,true,Tr_delta);
@@ -269,14 +269,14 @@ void Matcher::bucketFeatures(int32_t max_features,float bucket_width,float bucke
     int32_t v = (int32_t)floor(it->v1c/bucket_height);
     buckets[v*bucket_cols+u].push_back(*it);
   }
-  
+
   // refill p_matched from buckets
   p_matched_2.clear();
   for (int32_t i=0; i<bucket_cols*bucket_rows; i++) {
-    
+
     // shuffle bucket indices randomly
     std::random_shuffle(buckets[i].begin(),buckets[i].end());
-    
+
     // add up to max_features features from this bucket to p_matched
     int32_t k=0;
     for (vector<p_match>::iterator it=buckets[i].begin(); it!=buckets[i].end(); it++) {
@@ -336,25 +336,25 @@ float Matcher::getGain (vector<int32_t> inliers) {
 ///////////////////////
 
 void Matcher::nonMaximumSuppression (int16_t* I_f1,int16_t* I_f2,const int32_t* dims,vector<Matcher::maximum> &maxima,int32_t nms_n) {
-  
+
   // extract parameters
   int32_t width  = dims[0];
   int32_t height = dims[1];
   int32_t bpl    = dims[2];
   int32_t n      = nms_n;
   int32_t tau    = param.nms_tau;
-  
+
   // loop variables
   int32_t f1mini,f1minj,f1maxi,f1maxj,f2mini,f2minj,f2maxi,f2maxj;
   int32_t f1minval,f1maxval,f2minval,f2maxval,currval;
   int32_t addr;
-  
+
   for (int32_t i=n+margin; i<width-n-margin;i+=n+1) {
     for (int32_t j=n+margin; j<height-n-margin;j+=n+1) {
 
       f1mini = i; f1minj = j; f1maxi = i; f1maxj = j;
       f2mini = i; f2minj = j; f2maxi = i; f2maxj = j;
-      
+
       addr     = getAddressOffsetImage(i,j,bpl);
       f1minval = *(I_f1+addr);
       f1maxval = f1minval;
@@ -386,13 +386,13 @@ void Matcher::nonMaximumSuppression (int16_t* I_f1,int16_t* I_f2,const int32_t* 
           }
         }
       }
-      
+
       // f1 minimum
       for (int32_t i2=f1mini-n; i2<=min(f1mini+n,width-1-margin); i2++) {
         for (int32_t j2=f1minj-n; j2<=min(f1minj+n,height-1-margin); j2++) {
           currval = *(I_f1+getAddressOffsetImage(i2,j2,bpl));
           if (currval<f1minval && (i2<i || i2>i+n || j2<j || j2>j+n))
-            goto failed_f1min;            
+            goto failed_f1min;
         }
       }
       if (f1minval<=-tau)
@@ -410,7 +410,7 @@ void Matcher::nonMaximumSuppression (int16_t* I_f1,int16_t* I_f2,const int32_t* 
       if (f1maxval>=tau)
         maxima.push_back(Matcher::maximum(f1maxi,f1maxj,f1maxval,1));
       failed_f1max:;
-      
+
       // f2 minimum
       for (int32_t i2=f2mini-n; i2<=min(f2mini+n,width-1-margin); i2++) {
         for (int32_t j2=f2minj-n; j2<=min(f2minj+n,height-1-margin); j2++) {
@@ -439,7 +439,7 @@ void Matcher::nonMaximumSuppression (int16_t* I_f1,int16_t* I_f2,const int32_t* 
 }
 
 inline void Matcher::computeDescriptor (const uint8_t* I_du,const uint8_t* I_dv,const int32_t &bpl,const int32_t &u,const int32_t &v,uint8_t *desc_addr) {
-  
+
     // get address indices
   int32_t addr_m1 = getAddressOffsetImage(u,v-1,bpl);
   int32_t addr_m3 = addr_m1-2*bpl;
@@ -447,7 +447,7 @@ inline void Matcher::computeDescriptor (const uint8_t* I_du,const uint8_t* I_dv,
   int32_t addr_p1 = addr_m1+2*bpl;
   int32_t addr_p3 = addr_p1+2*bpl;
   int32_t addr_p5 = addr_p3+2*bpl;
-  
+
   // compute descriptor
   uint32_t k = 0;
   desc_addr[k++] = I_du[addr_m1-3];
@@ -485,14 +485,14 @@ inline void Matcher::computeDescriptor (const uint8_t* I_du,const uint8_t* I_dv,
 }
 
 inline void Matcher::computeSmallDescriptor (const uint8_t* I_du,const uint8_t* I_dv,const int32_t &bpl,const int32_t &u,const int32_t &v,uint8_t *desc_addr) {
-  
+
   // get address indices
   int32_t addr2 = getAddressOffsetImage(u,v,bpl);
   int32_t addr1 = addr2-bpl;
   int32_t addr0 = addr1-bpl;
   int32_t addr3 = addr2+bpl;
   int32_t addr4 = addr3+bpl;
-  
+
   // compute ELAS-descriptor
   uint32_t k = 0;
   desc_addr[k++] = I_du[addr0];
@@ -514,17 +514,17 @@ inline void Matcher::computeSmallDescriptor (const uint8_t* I_du,const uint8_t* 
 }
 
 void Matcher::computeDescriptors (uint8_t* I_du,uint8_t* I_dv,const int32_t bpl,std::vector<Matcher::maximum> &maxima) {
-  
+
   // loop variables
   int32_t u,v;
   uint8_t *desc_addr;
-  
+
   // for all maxima do
   for (vector<Matcher::maximum>::iterator it=maxima.begin(); it!=maxima.end(); it++) {
     u = (*it).u;
     v = (*it).v;
     desc_addr = (uint8_t*)(&((*it).d1));
-    computeDescriptor(I_du,I_dv,bpl,u,v,desc_addr);    
+    computeDescriptor(I_du,I_dv,bpl,u,v,desc_addr);
   }
 }
 
@@ -535,11 +535,11 @@ inline uint8_t Matcher::saturate (int16_t in) {
 }
 
 void Matcher::filterImageAll (uint8_t* I,uint8_t* I_du,uint8_t* I_dv,int16_t* I_f1,int16_t* I_f2,const int* dims) {
-  
-  // get bpl and height  
+
+  // get bpl and height
   const int32_t height = dims[1];
   const int32_t bpl    = dims[2];
-  
+
   // init sobel pointers
   const uint8_t* p00 = I + 0;
   const uint8_t* p01 = I + 1;
@@ -600,11 +600,11 @@ void Matcher::filterImageAll (uint8_t* I,uint8_t* I_du,uint8_t* I_dv,int16_t* I_
 }
 
 void Matcher::filterImageSobel (uint8_t* I,uint8_t* I_du,uint8_t* I_dv,const int* dims) {
-  
-  // get image width and height  
+
+  // get image width and height
   const int32_t height = dims[1];
   const int32_t bpl    = dims[2];
-  
+
   // init sobel pointers
   const uint8_t* p00 = I + 0;
   const uint8_t* p01 = I + 1;
@@ -655,13 +655,13 @@ uint8_t* Matcher::createHalfResolutionImage(uint8_t *I,const int32_t* dims) {
 }
 
 void Matcher::computeFeatures (uint8_t *I,const int32_t* dims,int32_t* &max1,int32_t &num1,int32_t* &max2,int32_t &num2,uint8_t* &I_du,uint8_t* &I_dv,uint8_t* &I_du_full,uint8_t* &I_dv_full,cv::Mat mask) {
-  
+
   int16_t *I_f1;
   int16_t *I_f2;
-  
+
   int32_t dims_matching[3];
   memcpy(dims_matching,dims,3*sizeof(int32_t));
-  
+
   // allocate memory for sobel images and filter images
   if (!param.half_resolution) {
     I_du = (uint8_t*)_mm_malloc(dims[2]*dims[1]*sizeof(uint8_t*),16);
@@ -706,7 +706,7 @@ void Matcher::computeFeatures (uint8_t *I,const int32_t* dims,int32_t* &max1,int
       }
     }
   }
-  
+
   // extract sparse maxima (1st pass) via non-maximum suppression
   vector<Matcher::maximum> maxima1;
   if (param.multi_stage) {
@@ -716,7 +716,7 @@ void Matcher::computeFeatures (uint8_t *I,const int32_t* dims,int32_t* &max1,int
     nonMaximumSuppression(I_f1,I_f2,dims_matching,maxima1,nms_n_sparse);
     computeDescriptors(I_du,I_dv,dims_matching[2],maxima1);
   }
-  
+
   // extract dense maxima (2nd pass) via non-maximum suppression
   vector<Matcher::maximum> maxima2;
   nonMaximumSuppression(I_f1,I_f2,dims_matching,maxima2,param.nms_n);
@@ -724,14 +724,14 @@ void Matcher::computeFeatures (uint8_t *I,const int32_t* dims,int32_t* &max1,int
 
   // release filter images
   _mm_free(I_f1);
-  _mm_free(I_f2);  
-  
+  _mm_free(I_f2);
+
   // get number of interest points and init maxima pointer to NULL
   num1 = maxima1.size();
   num2 = maxima2.size();
   max1 = 0;
   max2 = 0;
-  
+
   int32_t s = 1;
   if (param.half_resolution)
     s = 2;
@@ -746,7 +746,7 @@ void Matcher::computeFeatures (uint8_t *I,const int32_t* dims,int32_t* &max1,int
       *(max1+k++) = it->d5;   *(max1+k++) = it->d6;   *(max1+k++) = it->d7;   *(max1+k++) = it->d8;
     }
   }
-  
+
   // return dense maxima as 16-bytes aligned memory
   if (num2!=0) {
     max2 = (int32_t*)_mm_malloc(sizeof(Matcher::maximum)*num2,16);
@@ -760,20 +760,20 @@ void Matcher::computeFeatures (uint8_t *I,const int32_t* dims,int32_t* &max1,int
 }
 
 void Matcher::computePriorStatistics (vector<Matcher::p_match> &p_matched,int32_t method) {
-   
+
   // compute number of bins
   int32_t u_bin_num = (int32_t)ceil((float)dims_c[0]/(float)param.match_binsize);
   int32_t v_bin_num = (int32_t)ceil((float)dims_c[1]/(float)param.match_binsize);
   int32_t bin_num   = v_bin_num*u_bin_num;
-  
+
   // number of matching stages
   int32_t num_stages = 2;
   if (method==2)
     num_stages = 4;
-  
+
   // allocate bin accumulator memory
   vector<Matcher::delta> *delta_accu = new vector<Matcher::delta>[bin_num];
-  
+
   // fill bin accumulator
   Matcher::delta delta_curr;
   for (vector<Matcher::p_match>::iterator it=p_matched.begin(); it!=p_matched.end(); it++) {
@@ -784,14 +784,14 @@ void Matcher::computePriorStatistics (vector<Matcher::p_match> &p_matched,int32_
       delta_curr.val[1] = it->v1p - it->v1c;
       delta_curr.val[2] = it->u1c - it->u1p;
       delta_curr.val[3] = it->v1c - it->v1p;
-      
+
     // method stereo: compute position delta
     } else if (method==1) {
       delta_curr.val[0] = it->u2c - it->u1c;
-      delta_curr.val[1] = 0; 
+      delta_curr.val[1] = 0;
       delta_curr.val[2] = it->u1c - it->u2c;
-      delta_curr.val[3] = 0;     
-      
+      delta_curr.val[3] = 0;
+
     // method quad matching: compute position delta
     } else {
       /*
@@ -812,7 +812,7 @@ void Matcher::computePriorStatistics (vector<Matcher::p_match> &p_matched,int32_
       delta_curr.val[6] = it->u1p - it->u1c;
       delta_curr.val[7] = it->v1p - it->v1c;
     }
-    
+
     // compute row and column of bin to which this observation belongs
     int32_t u_bin_min,u_bin_max,v_bin_min,v_bin_max;
 
@@ -822,7 +822,7 @@ void Matcher::computePriorStatistics (vector<Matcher::p_match> &p_matched,int32_
       u_bin_max = min(max((int32_t)floor(it->u1c/(float)param.match_binsize)+1,0),u_bin_num-1);
       v_bin_min = min(max((int32_t)floor(it->v1c/(float)param.match_binsize)-1,0),v_bin_num-1);
       v_bin_max = min(max((int32_t)floor(it->v1c/(float)param.match_binsize)+1,0),v_bin_num-1);
-      
+
     // quad matching: use current previous image as reference
     } else {
       u_bin_min = min(max((int32_t)floor(it->u1p/(float)param.match_binsize)-1,0),u_bin_num-1);
@@ -830,31 +830,31 @@ void Matcher::computePriorStatistics (vector<Matcher::p_match> &p_matched,int32_
       v_bin_min = min(max((int32_t)floor(it->v1p/(float)param.match_binsize)-1,0),v_bin_num-1);
       v_bin_max = min(max((int32_t)floor(it->v1p/(float)param.match_binsize)+1,0),v_bin_num-1);
     }
-    
+
     // add to accumulator
     for (int32_t v_bin=v_bin_min; v_bin<=v_bin_max; v_bin++)
       for (int32_t u_bin=u_bin_min; u_bin<=u_bin_max; u_bin++)
         delta_accu[v_bin*u_bin_num+u_bin].push_back(delta_curr);
   }
-  
+
   // clear ranges
   ranges.clear();
-  
+
   // for all bins compute statistics
   for (int32_t v_bin=0; v_bin<v_bin_num; v_bin++) {
     for (int32_t u_bin=0; u_bin<u_bin_num; u_bin++) {
-      
+
       // use full range in case there are no observations
       delta delta_min(-param.match_radius);
       delta delta_max(+param.match_radius);
-      
+
       // otherwise determine delta min and delta max
       if (delta_accu[v_bin*u_bin_num+u_bin].size()>0) {
-        
+
         // init displacements 'delta' to 'infinite'
         delta_min = delta(+1000000);
         delta_max = delta(-1000000);
-        
+
         // find minimum and maximum displacements
         for (vector<Matcher::delta>::iterator it=delta_accu[v_bin*u_bin_num+u_bin].begin();
              it!=delta_accu[v_bin*u_bin_num+u_bin].end(); it++) {
@@ -864,11 +864,11 @@ void Matcher::computePriorStatistics (vector<Matcher::p_match> &p_matched,int32_
           }
         }
       }
-      
+
       // set search range for this bin
       range r;
       for (int32_t i=0; i<num_stages; i++) {
-        
+
         // bound minimum search range to 20x20
         float delta_u = delta_max.val[i*2+0]-delta_min.val[i*2+0];
         if (delta_u<20) {
@@ -880,17 +880,17 @@ void Matcher::computePriorStatistics (vector<Matcher::p_match> &p_matched,int32_
           delta_min.val[i*2+1] -= ceil((20-delta_v)/2);
           delta_max.val[i*2+1] += ceil((20-delta_v)/2);
         }
-        
+
         // set range for this bin
         r.u_min[i] = delta_min.val[i*2+0];
         r.u_max[i] = delta_max.val[i*2+0];
         r.v_min[i] = delta_min.val[i*2+1];
         r.v_max[i] = delta_max.val[i*2+1];
       }
-      ranges.push_back(r);      
+      ranges.push_back(r);
     }
   }
-  
+
   // free bin accumulator memory
   delete []delta_accu;
 }
@@ -899,19 +899,19 @@ void Matcher::createIndexVector (int32_t* m,int32_t n,vector<int32_t> *k,const i
 
   // descriptor step size
   int32_t step_size = sizeof(Matcher::maximum)/sizeof(int32_t);
-  
+
   // for all points do
   for (int32_t i=0; i<n; i++) {
-    
+
     // extract coordinates and class
     int32_t u = *(m+step_size*i+0); // u-coordinate
     int32_t v = *(m+step_size*i+1); // v-coordinate
     int32_t c = *(m+step_size*i+3); // class
-    
+
     // compute row and column of bin to which this observation belongs
     int32_t u_bin = min((int32_t)floor((float)u/(float)param.match_binsize),u_bin_num-1);
     int32_t v_bin = min((int32_t)floor((float)v/(float)param.match_binsize),v_bin_num-1);
-    
+
     // save index
     k[(c*v_bin_num+v_bin)*u_bin_num+u_bin].push_back(i);
   }
@@ -920,7 +920,7 @@ void Matcher::createIndexVector (int32_t* m,int32_t n,vector<int32_t> *k,const i
 inline void Matcher::findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const int32_t &step_size,vector<int32_t> *k2,
                                 const int32_t &u_bin_num,const int32_t &v_bin_num,const int32_t &stat_bin,
                                 int32_t& min_ind,int32_t stage,bool flow,bool use_prior,double u_,double v_) {
-  
+
   // init and load image coordinates + feature
   min_ind          = 0;
   double  min_cost = 10000000;
@@ -929,16 +929,16 @@ inline void Matcher::findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const 
   int32_t c        = *(m1+step_size*i1+3);
   __m128i xmm1     = _mm_load_si128((__m128i*)(m1+step_size*i1+4));
   __m128i xmm2     = _mm_load_si128((__m128i*)(m1+step_size*i1+8));
-  
+
   float u_min,u_max,v_min,v_max;
-  
+
   // restrict search range with prior
   if (use_prior) {
     u_min = u1+ranges[stat_bin].u_min[stage];
     u_max = u1+ranges[stat_bin].u_max[stage];
     v_min = v1+ranges[stat_bin].v_min[stage];
     v_max = v1+ranges[stat_bin].v_max[stage];
-    
+
   // otherwise: use full search space
   } else {
     u_min = u1-param.match_radius;
@@ -946,19 +946,19 @@ inline void Matcher::findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const 
     v_min = v1-param.match_radius;
     v_max = v1+param.match_radius;
   }
-  
+
   // if stereo search => constrain to 1d
   if (!flow) {
     v_min = v1-param.match_disp_tolerance;
     v_max = v1+param.match_disp_tolerance;
   }
-  
+
   // bins of interest
   int32_t u_bin_min = min(max((int32_t)floor(u_min/(float)param.match_binsize),0),u_bin_num-1);
   int32_t u_bin_max = min(max((int32_t)floor(u_max/(float)param.match_binsize),0),u_bin_num-1);
   int32_t v_bin_min = min(max((int32_t)floor(v_min/(float)param.match_binsize),0),v_bin_num-1);
   int32_t v_bin_max = min(max((int32_t)floor(v_max/(float)param.match_binsize),0),v_bin_num-1);
-  
+
   // for all bins of interest do
   for (int32_t u_bin=u_bin_min; u_bin<=u_bin_max; u_bin++) {
     for (int32_t v_bin=v_bin_min; v_bin<=v_bin_max; v_bin++) {
@@ -968,19 +968,19 @@ inline void Matcher::findMatch (int32_t* m1,const int32_t &i1,int32_t* m2,const 
         int32_t v2   = *(m2+step_size*(*i2_it)+1);
         if (u2>=u_min && u2<=u_max && v2>=v_min && v2<=v_max) {
           __m128i xmm3 = _mm_load_si128((__m128i*)(m2+step_size*(*i2_it)+4));
-          __m128i xmm4 = _mm_load_si128((__m128i*)(m2+step_size*(*i2_it)+8));                    
+          __m128i xmm4 = _mm_load_si128((__m128i*)(m2+step_size*(*i2_it)+8));
           xmm3 = _mm_sad_epu8 (xmm1,xmm3);
           xmm4 = _mm_sad_epu8 (xmm2,xmm4);
           xmm4 = _mm_add_epi16(xmm3,xmm4);
           double cost = (double)(_mm_extract_epi16(xmm4,0)+_mm_extract_epi16(xmm4,4));
-          
+
           if (u_>=0 && v_>=0) {
             double du = (double)u2-u_;
             double dv = (double)v2-v_;
             double dist = sqrt(du*du+dv*dv);
             cost += 4*dist;
           }
-          
+
           if (cost<min_cost) {
             min_ind  = *i2_it;
             min_cost = cost;
@@ -997,23 +997,23 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
 
   // descriptor step size (number of int32_t elements in struct)
   int32_t step_size = sizeof(Matcher::maximum)/sizeof(int32_t);
-  
+
   // compute number of bins
   int32_t u_bin_num = (int32_t)ceil((float)dims_c[0]/(float)param.match_binsize);
   int32_t v_bin_num = (int32_t)ceil((float)dims_c[1]/(float)param.match_binsize);
   int32_t bin_num   = 4*v_bin_num*u_bin_num; // 4 classes
-  
+
   // allocate memory for index vectors (needed for efficient search)
   vector<int32_t> *k1p = new vector<int32_t>[bin_num];
   vector<int32_t> *k2p = new vector<int32_t>[bin_num];
   vector<int32_t> *k1c = new vector<int32_t>[bin_num];
   vector<int32_t> *k2c = new vector<int32_t>[bin_num];
-  
+
   // loop variables
   int32_t* M = (int32_t*)calloc(dims_c[0]*dims_c[1],sizeof(int32_t));
   int32_t i1p,i2p,i1c,i2c,i1c2,i1p2;
   int32_t u1p,v1p,u2p,v2p,u1c,v1c,u2c,v2c;
-  
+
   double t00,t01,t02,t03,t10,t11,t12,t13,t20,t21,t22,t23;
   if (Tr_delta) {
     t00 = Tr_delta->val[0][0];
@@ -1033,11 +1033,11 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
   /////////////////////////////////////////////////////
   // method: flow
   if (method==0) {
-    
+
     // create position/class bin index vectors
     createIndexVector(m1p,n1p,k1p,u_bin_num,v_bin_num);
     createIndexVector(m1c,n1c,k1c,u_bin_num,v_bin_num);
-    
+
     // for all points do
     for (i1c=0; i1c<n1c; i1c++) {
 
@@ -1068,15 +1068,15 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
         }
       }
     }
-    
+
   /////////////////////////////////////////////////////
   // method: stereo
   } else if (method==1) {
-    
+
     // create position/class bin index vectors
     createIndexVector(m1c,n1c,k1c,u_bin_num,v_bin_num);
     createIndexVector(m2c,n2c,k2c,u_bin_num,v_bin_num);
-    
+
     // for all points do
     for (i1c=0; i1c<n1c; i1c++) {
 
@@ -1111,17 +1111,17 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
         }
       }
     }
-    
+
   /////////////////////////////////////////////////////
   // method: quad matching
   } else {
-    
+
     // create position/class bin index vectors
     createIndexVector(m1p,n1p,k1p,u_bin_num,v_bin_num);
     createIndexVector(m2p,n2p,k2p,u_bin_num,v_bin_num);
     createIndexVector(m1c,n1c,k1c,u_bin_num,v_bin_num);
     createIndexVector(m2c,n2c,k2c,u_bin_num,v_bin_num);
-    
+
     // for all points do
     for (i1p=0; i1p<n1p; i1p++) {
 
@@ -1141,7 +1141,7 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
       v2p = *(m2p+step_size*i2p+1);
 
       if (Tr_delta) {
-      
+
         double d = max((double)u1p-(double)u2p,1.0);
         double x1p = ((double)u1p-param.cu)*param.base/d;
         double y1p = ((double)v1p-param.cv)*param.base/d;
@@ -1163,7 +1163,7 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
         findMatch(m1c,i1c,m1p,step_size,k1p,u_bin_num,v_bin_num,stat_bin,i1p2,3,true ,use_prior,u1p,v1p);
       else
         findMatch(m1c,i1c,m1p,step_size,k1p,u_bin_num,v_bin_num,stat_bin,i1p2,3,true ,use_prior);
-      
+
       // circle closure success?
       if (i1p2==i1p) {
 
@@ -1173,14 +1173,14 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
 
         // if disparities are positive
         if (u1p>=u2p && u1c>=u2c) {
-          
+
           // add match
           p_matched.push_back(Matcher::p_match(u1p,v1p,i1p,u2p,v2p,i2p,
                                                u1c,v1c,i1c,u2c,v2c,i2c));
         }
       }
     }
-    
+
     // old version:
     /*
     // for all points do
@@ -1200,7 +1200,7 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
       findMatch(m1p,i1p,m2p,step_size,k2p,u_bin_num,v_bin_num,stat_bin,i2p, 1,false,use_prior,Tr_delta);
       findMatch(m2p,i2p,m2c,step_size,k2c,u_bin_num,v_bin_num,stat_bin,i2c, 2,true ,use_prior,Tr_delta);
       findMatch(m2c,i2c,m1c,step_size,k1c,u_bin_num,v_bin_num,stat_bin,i1c2,3,false,use_prior,Tr_delta);
-      
+
       // circle closure success?
       if (i1c2==i1c) {
 
@@ -1211,14 +1211,14 @@ void Matcher::matching (int32_t *m1p,int32_t *m2p,int32_t *m1c,int32_t *m2c,
 
         // if disparities are positive
         if (u1p>=u2p && u1c>=u2c) {
-          
+
           // add match if this pixel isn't matched yet
           if (*(M+getAddressOffsetImage(u1c,v1c,dims_c[0]))==0) {
             p_matched.push_back(Matcher::p_match(u1p,v1p,i1p,u2p,v2p,i2p,
                                                  u1c,v1c,i1c,u2c,v2c,i2c));
             *(M+getAddressOffsetImage(u1c,v1c,dims_c[0])) = 1;
           }
-          
+
         }
       }
     }
@@ -1246,10 +1246,10 @@ void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method
   in.numberofpoints = p_matched.size();
   in.pointlist = (float*)malloc(in.numberofpoints*2*sizeof(float));
   int32_t k=0;
-  
+
   // create copy of p_matched, init vector with number of support points
   // and fill triangle point vector for delaunay triangulation
-  vector<Matcher::p_match> p_matched_copy;  
+  vector<Matcher::p_match> p_matched_copy;
   vector<int32_t> num_support;
   for (vector<Matcher::p_match>::iterator it=p_matched.begin(); it!=p_matched.end(); it++) {
     p_matched_copy.push_back(*it);
@@ -1257,7 +1257,7 @@ void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method
     in.pointlist[k++] = it->u1c;
     in.pointlist[k++] = it->v1c;
   }
-  
+
   // input parameters
   in.numberofpointattributes = 0;
   in.pointattributelist      = NULL;
@@ -1266,7 +1266,7 @@ void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method
   in.numberofholes           = 0;
   in.numberofregions         = 0;
   in.regionlist              = NULL;
-  
+
   // outputs
   out.pointlist              = NULL;
   out.pointattributelist     = NULL;
@@ -1283,18 +1283,18 @@ void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method
   // attention: not using the B switch or using the n switch creates a memory leak (=> use valgrind!)
   char parameters[] = "zQB";
   triangulate(parameters, &in, &out, NULL);
-  
+
   // for all triangles do
   for (int32_t i=0; i<out.numberoftriangles; i++) {
-    
+
     // extract triangle corner points
     int32_t p1 = out.trianglelist[i*3+0];
     int32_t p2 = out.trianglelist[i*3+1];
     int32_t p3 = out.trianglelist[i*3+2];
-    
+
     // method: flow
     if (method==0) {
-      
+
       // 1. corner disparity and flow
       float p1_flow_u = p_matched_copy[p1].u1c-p_matched_copy[p1].u1p;
       float p1_flow_v = p_matched_copy[p1].v1c-p_matched_copy[p1].v1p;
@@ -1324,10 +1324,10 @@ void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method
         num_support[p1]++;
         num_support[p3]++;
       }
-      
+
     // method: stereo
     } else if (method==1) {
-      
+
       // 1. corner disparity and flow
       float p1_disp   = p_matched_copy[p1].u1c-p_matched_copy[p1].u2c;
 
@@ -1354,10 +1354,10 @@ void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method
         num_support[p1]++;
         num_support[p3]++;
       }
-      
+
     // method: quad matching
     } else {
-      
+
       // 1. corner disparity and flow
       float p1_flow_u = p_matched_copy[p1].u1c-p_matched_copy[p1].u1p;
       float p1_flow_v = p_matched_copy[p1].v1c-p_matched_copy[p1].v1p;
@@ -1392,13 +1392,13 @@ void Matcher::removeOutliers (vector<Matcher::p_match> &p_matched,int32_t method
       }
     }
   }
-  
+
   // refill p_matched
   p_matched.clear();
   for (int i=0; i<in.numberofpoints; i++)
     if (num_support[i]>=4)
       p_matched.push_back(p_matched_copy[i]);
-  
+
   // free memory used for triangulation
   free(in.pointlist);
   free(out.pointlist);
@@ -1415,12 +1415,12 @@ bool Matcher::parabolicFitting(const uint8_t* I1_du,const uint8_t* I1_dv,const i
   // check if parabolic fitting is feasible (descriptors are within margin)
   if (u2-3<margin || u2+3>dims2[0]-1-margin || v2-3<margin || v2+3>dims2[1]-1-margin)
     return false;
-  
+
   // compute reference descriptor
   __m128i xmm1,xmm2;
   computeSmallDescriptor(I1_du,I1_dv,dims1[2],(int32_t)u1,(int32_t)v1,desc_buffer);
   xmm1 = _mm_load_si128((__m128i*)(desc_buffer));
-  
+
   // compute cost matrix
   int32_t cost[49];
   for (int32_t dv=0; dv<7; dv++) {
@@ -1431,7 +1431,7 @@ bool Matcher::parabolicFitting(const uint8_t* I1_du,const uint8_t* I1_dv,const i
       cost[dv*7+du] = _mm_extract_epi16(xmm2,0)+_mm_extract_epi16(xmm2,4);
     }
   }
-  
+
   // compute minimum
   int32_t min_ind  = 0;
   int32_t min_cost = cost[0];
@@ -1441,15 +1441,15 @@ bool Matcher::parabolicFitting(const uint8_t* I1_du,const uint8_t* I1_dv,const i
       min_cost  = cost[i];
     }
   }
-  
+
   // get indices
   int32_t du = min_ind%7;
   int32_t dv = min_ind/7;
-  
+
   // if minimum is at borders => remove this match
   if (du==0 || du==6 || dv==0 || dv==6)
     return false;
-  
+
   // solve least squares system
   Matrix c(9,1);
   for (int32_t i=-1; i<=+1; i++) {
@@ -1463,7 +1463,7 @@ bool Matcher::parabolicFitting(const uint8_t* I1_du,const uint8_t* I1_dv,const i
   Matrix b = At*c;
   if (!b.solve(AtA))
     return false;
-  
+
   // extract relative coordinates
   float divisor = (b.val[2][0]*b.val[2][0]-4.0*b.val[0][0]*b.val[1][0]);
   if (fabs(divisor)<1e-8 || fabs(b.val[2][0])<1e-8)
@@ -1472,11 +1472,11 @@ bool Matcher::parabolicFitting(const uint8_t* I1_du,const uint8_t* I1_dv,const i
   float ddu = -(b.val[4][0]+2.0*b.val[1][0]*ddv)/b.val[2][0];
   if (fabs(ddu)>=1.0 || fabs(ddv)>=1.0)
     return false;
-  
+
   // update target
   u2 += (float)du-3.0+ddu;
   v2 += (float)dv-3.0+ddv;
-  
+
   // return true on success
   return true;
 }
@@ -1490,12 +1490,12 @@ void Matcher::relocateMinimum(const uint8_t* I1_du,const uint8_t* I1_dv,const in
   // check if parabolic fitting is feasible (descriptors are within margin)
   if (u2-2<margin || u2+2>dims2[0]-1-margin || v2-2<margin || v2+2>dims2[1]-1-margin)
     return;
-  
+
   // compute reference descriptor
   __m128i xmm1,xmm2;
   computeSmallDescriptor(I1_du,I1_dv,dims1[2],(int32_t)u1,(int32_t)v1,desc_buffer);
   xmm1 = _mm_load_si128((__m128i*)(desc_buffer));
-  
+
   // compute cost matrix
   int32_t cost[25];
   for (int32_t dv=0; dv<5; dv++) {
@@ -1506,7 +1506,7 @@ void Matcher::relocateMinimum(const uint8_t* I1_du,const uint8_t* I1_dv,const in
       cost[dv*5+du] = _mm_extract_epi16(xmm2,0)+_mm_extract_epi16(xmm2,4);
     }
   }
-  
+
   // compute minimum
   int32_t min_ind  = 0;
   int32_t min_cost = cost[0];
@@ -1516,21 +1516,21 @@ void Matcher::relocateMinimum(const uint8_t* I1_du,const uint8_t* I1_dv,const in
       min_cost  = cost[i];
     }
   }
-  
+
   // update target
   u2 += (float)(min_ind%5)-2.0;
   v2 += (float)(min_ind/5)-2.0;
 }
 
 void Matcher::refinement (vector<Matcher::p_match> &p_matched,int32_t method) {
-  
+
   // allocate aligned memory (32 bytes for 1 descriptors)
   uint8_t* desc_buffer = (uint8_t*)_mm_malloc(32*sizeof(uint8_t),16);
-  
+
   // copy vector (for refill)
   vector<Matcher::p_match> p_matched_copy = p_matched;
   p_matched.clear();
-  
+
   // create matrices for least square fitting
   FLOAT A_data[9*6] = { 1, 1, 1,-1,-1, 1,
                         0, 1, 0, 0,-1, 1,
@@ -1544,7 +1544,7 @@ void Matcher::refinement (vector<Matcher::p_match> &p_matched,int32_t method) {
   Matrix A(9,6,A_data);
   Matrix At  = ~A;
   Matrix AtA = At*A;
-  
+
   uint8_t* I1p_du_fit = I1p_du;
   uint8_t* I1p_dv_fit = I1p_dv;
   uint8_t* I2p_du_fit = I2p_du;
@@ -1563,10 +1563,10 @@ void Matcher::refinement (vector<Matcher::p_match> &p_matched,int32_t method) {
     I2c_du_fit = I2c_du_full;
     I2c_dv_fit = I2c_dv_full;
   }
-  
+
   // for all matches do
   for (vector<Matcher::p_match>::iterator it=p_matched_copy.begin(); it!=p_matched_copy.end(); it++) {
-    
+
     // method: flow or quad matching
     if (method==0 || method==2) {
       if (param.refinement==2) {
@@ -1578,7 +1578,7 @@ void Matcher::refinement (vector<Matcher::p_match> &p_matched,int32_t method) {
                         it->u1c,it->v1c,it->u1p,it->v1p,desc_buffer);
       }
     }
-    
+
     // method: stereo or quad matching
     if (method==1 || method==2) {
       if (param.refinement==2) {
@@ -1590,7 +1590,7 @@ void Matcher::refinement (vector<Matcher::p_match> &p_matched,int32_t method) {
                         it->u1c,it->v1c,it->u2c,it->v2c,desc_buffer);
       }
     }
-    
+
     // method: quad matching
     if (method==2) {
       if (param.refinement==2) {
@@ -1606,7 +1606,7 @@ void Matcher::refinement (vector<Matcher::p_match> &p_matched,int32_t method) {
     // add this match
     p_matched.push_back(*it);
   }
-  
+
   // free memory
   _mm_free(desc_buffer);
 }
@@ -1620,4 +1620,3 @@ float Matcher::mean(const uint8_t* I,const int32_t &bpl,const int32_t &u_min,con
     mean /= (float)((u_max-u_min+1)*(v_max-v_min+1));
 }
 } // end of namespace viso2
-

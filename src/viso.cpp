@@ -16,10 +16,10 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
 libviso2; if not, write to the Free Software Foundation, Inc., 51 Franklin
-Street, Fifth Floor, Boston, MA 02110-1301, USA 
+Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
-#include "viso.h"
+#include "viso2/viso.h"
 
 #include <math.h>
 
@@ -41,18 +41,18 @@ VisualOdometry::~VisualOdometry () {
 }
 
 bool VisualOdometry::updateMotion () {
-  
+
   // estimate motion
   vector<double> tr_delta = estimateMotion(p_matched);
-  
+
   // on failure
   if (tr_delta.size()!=6)
     return false;
-  
+
   // set transformation matrix (previous to current frame)
   Tr_delta = transformationVectorToMatrix(tr_delta);
   Tr_valid = true;
-  
+
   // success
   return true;
 }
@@ -89,7 +89,7 @@ vector<int32_t> VisualOdometry::getRandomSample(int32_t N,int32_t num) {
   // init sample and totalset
   vector<int32_t> sample;
   vector<int32_t> totalset;
-  
+
   // create vector containing all indices
   for (int32_t i=0; i<N; i++)
     totalset.push_back(i);
@@ -101,7 +101,7 @@ vector<int32_t> VisualOdometry::getRandomSample(int32_t N,int32_t num) {
     sample.push_back(totalset[j]);
     totalset.erase(totalset.begin()+j);
   }
-  
+
   // return sample
   return sample;
 }

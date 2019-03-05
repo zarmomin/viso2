@@ -259,7 +259,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "triangle.h"
+#include "viso2/triangle.h"
 
 /* Labels that signify the result of point location.  The result of a        */
 /*   search indicates that the point falls in the interior of a triangle, on */
@@ -3842,7 +3842,7 @@ float orient3d(struct mesh *m, struct behavior *b,
   adxbdy = adx * bdy;
   bdxady = bdx * ady;
 
-  det = adheight * (bdxcdy - cdxbdy) 
+  det = adheight * (bdxcdy - cdxbdy)
       + bdheight * (cdxady - adxcdy)
       + cdheight * (adxbdy - bdxady);
 
@@ -7498,7 +7498,7 @@ void carveholes(struct mesh *m, struct behavior *b, float *holelist, int holes,
         } else {
           printf("Spreading regional attributes.\n");
         }
-      } else { 
+      } else {
         printf("Spreading regional area constraints.\n");
       }
     }
@@ -7893,7 +7893,7 @@ void writepoly(struct mesh *m, struct behavior *b,
   slist = *segmentlist;
   smlist = *segmentmarkerlist;
   index = 0;
-  
+
   traversalinit(&m->subsegs);
   subsegloop.ss = subsegtraverse(m);
   subsegloop.ssorient = 0;
@@ -8503,7 +8503,7 @@ void triangulate(char *triswitches, struct triangulateio *in,
   struct behavior b;
   float *holearray;                                        /* Array of holes. */
   float *regionarray;   /* Array of regional attributes and area constraints. */
-  
+
   triangleinit(&m);
   parsecommandline(1, &triswitches, &b);
   m.steinerleft = b.steiner;

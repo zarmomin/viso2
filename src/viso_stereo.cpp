@@ -16,10 +16,10 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
 libviso2; if not, write to the Free Software Foundation, Inc., 51 Franklin
-Street, Fifth Floor, Boston, MA 02110-1301, USA 
+Street, Fifth Floor, Boston, MA 02110-1301, USA
 */
 
-#include "viso_stereo.h"
+#include "viso2/viso_stereo.h"
 
 using namespace std;
 namespace viso2 {
@@ -32,38 +32,38 @@ VisualOdometryStereo::~VisualOdometryStereo() {
 }
 
 bool VisualOdometryStereo::process (uint8_t *I1,uint8_t *I2,int32_t* dims,bool replace) {
-  
+
   // push back images
   matcher->pushBack(I1,I2,dims,replace);
-  
+
   // bootstrap motion estimate if invalid
   if (!Tr_valid) {
     matcher->matchFeatures(2);
-    matcher->bucketFeatures(param.bucket.max_features,param.bucket.bucket_width,param.bucket.bucket_height);                          
+    matcher->bucketFeatures(param.bucket.max_features,param.bucket.bucket_width,param.bucket.bucket_height);
     p_matched = matcher->getMatches();
     updateMotion();
   }
-  
+
   // match features and update motion
   if (Tr_valid) matcher->matchFeatures(2,&Tr_delta);
   else          matcher->matchFeatures(2);
-  matcher->bucketFeatures(param.bucket.max_features,param.bucket.bucket_width,param.bucket.bucket_height);                          
+  matcher->bucketFeatures(param.bucket.max_features,param.bucket.bucket_width,param.bucket.bucket_height);
   p_matched = matcher->getMatches();
   return updateMotion();
 }
 
 vector<double> VisualOdometryStereo::estimateMotion (vector<Matcher::p_match> p_matched) {
-  
+
   // return value
   bool success = true;
-  
+
   // compute minimum distance for RANSAC samples
   double width=0,height=0;
   for (vector<Matcher::p_match>::iterator it=p_matched.begin(); it!=p_matched.end(); it++) {
     if (it->u1c>width)  width  = it->u1c;
     if (it->v1c>height) height = it->v1c;
   }
-  
+
   // get number of matches
   int32_t N  = p_matched.size();
   if (N<6)
@@ -90,7 +90,7 @@ vector<double> VisualOdometryStereo::estimateMotion (vector<Matcher::p_match> p_
   vector<double> tr_delta;
   vector<double> tr_delta_curr;
   tr_delta_curr.resize(6);
-  
+
   // clear parameter vector
   inliers.clear();
 
@@ -122,12 +122,12 @@ vector<double> VisualOdometryStereo::estimateMotion (vector<Matcher::p_match> p_
       }
     }
   }
-  
+
   // final optimization (refinement)
   if (inliers.size()>=6) {
     int32_t iter=0;
     VisualOdometryStereo::result result = UPDATED;
-    while (result==UPDATED) {     
+    while (result==UPDATED) {
       result = updateParameters(p_matched,inliers,tr_delta,1,1e-8);
       if (iter++ > 100 || result==CONVERGED)
         break;
@@ -150,7 +150,7 @@ vector<double> VisualOdometryStereo::estimateMotion (vector<Matcher::p_match> p_
   delete[] p_predict;
   delete[] p_observe;
   delete[] p_residual;
-  
+
   // parameter estimate succeeded?
   if (success) return tr_delta;
   else         return vector<double>();
@@ -177,11 +177,11 @@ vector<int32_t> VisualOdometryStereo::getInlier(vector<Matcher::p_match> &p_matc
 }
 
 VisualOdometryStereo::result VisualOdometryStereo::updateParameters(vector<Matcher::p_match> &p_matched,vector<int32_t> &active,vector<double> &tr,double step_size,double eps) {
-  
+
   // we need at least 3 observations
   if (active.size()<3)
     return FAILED;
-  
+
   // extract observations and compute predictions
   computeObservations(p_matched,active);
   computeResidualsAndJacobian(tr,active);
@@ -274,12 +274,12 @@ void VisualOdometryStereo::computeResidualsAndJacobian(vector<double> &tr,vector
     X1c = r00*X1p+r01*Y1p+r02*Z1p+tx;
     Y1c = r10*X1p+r11*Y1p+r12*Z1p+ty;
     Z1c = r20*X1p+r21*Y1p+r22*Z1p+tz;
-    
+
     // weighting
     double weight = 1.0;
     if (param.reweighting)
       weight = 1.0/(fabs(p_observe[4*i+0]-param.calib.cu)/fabs(param.calib.cu) + 0.05);
-    
+
     // compute 3d point in current right coordinate system
     X2c = X1c-param.base;
 
@@ -317,7 +317,7 @@ void VisualOdometryStereo::computeResidualsAndJacobian(vector<double> &tr,vector
     p_predict[4*i+1] = param.calib.f*Y1c/Z1c+param.calib.cv; // left v
     p_predict[4*i+2] = param.calib.f*X2c/Z1c+param.calib.cu; // right u
     p_predict[4*i+3] = param.calib.f*Y1c/Z1c+param.calib.cv; // right v
-    
+
     // set residuals
     p_residual[4*i+0] = weight*(p_observe[4*i+0]-p_predict[4*i+0]);
     p_residual[4*i+1] = weight*(p_observe[4*i+1]-p_predict[4*i+1]);

@@ -8,9 +8,7 @@
  <maintainer email="johannes.graeter@kit.edu">Johannes Graeter</maintainer>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>mrt_cmake_modules</build_depend>
-  <depend>png++</depend>
-  <depend>mrt_opencv</depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
 
   <export>
     <!-- Other tools can request additional information be placed here -->
